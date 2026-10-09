@@ -12,3 +12,30 @@
 @media(prefers-reduced-motion:reduce){.organize-page{animation:none}}
 @media(max-width:750px){.planner-remove{width:30px;height:30px}.planner-recipe-open>.planner-image-placeholder{height:95px}}
 @media(max-width:370px){.planner-recipe-open>.planner-image-placeholder{grid-row:span 2;width:70px;height:62px;margin:0}}
+.local-folder-intro,.local-folder-status{display:flex;align-items:flex-start;gap:16px;background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.local-folder-intro>svg{flex-shrink:0;color:var(--green);margin-top:2px}.local-folder-intro strong,.local-folder-status-copy>strong{display:block;font-size:15px;overflow-wrap:anywhere}.local-folder-intro p{font-size:13px;color:var(--muted);line-height:1.8;margin:8px 0 0}.local-folder-status.is-connected{background:var(--green-soft)}.local-folder-symbol{display:grid;place-items:center;flex-shrink:0;width:46px;height:46px;border-radius:12px;background:var(--surface);color:var(--green)}.local-folder-status-copy{min-width:0}.local-folder-status-copy>span{display:flex;align-items:center;gap:6px;color:var(--green);font-size:12px;line-height:1.8;margin-top:6px}.local-folder-status-copy>span>svg{flex-shrink:0}.local-folder-status-copy>small{display:block;color:var(--muted);font-size:11px;line-height:1.7;margin-top:5px}.local-folder-guidance{font-size:13px;line-height:1.9;color:var(--muted);margin:15px 0 20px}.local-folder-actions{display:flex;align-items:center;gap:13px;flex-wrap:wrap}.local-folder-actions>.text-button{margin-left:auto}.local-folder-notice code{font-family:inherit;font-size:inherit;color:var(--text);overflow-wrap:anywhere}.local-folder-preview-date{font-size:12px;line-height:1.7;color:var(--muted);margin:10px 0 0}.local-folder-spinner{animation:local-folder-spin 1.2s linear infinite}@keyframes local-folder-spin{to{transform:rotate(360deg)}}@media(max-width:750px){.local-folder-intro,.local-folder-status{gap:12px;padding:16px}.local-folder-intro strong,.local-folder-status-copy>strong{font-size:14px}.local-folder-intro p,.local-folder-guidance{font-size:12px}.local-folder-actions{align-items:stretch;flex-direction:column}.local-folder-actions>.button{justify-content:center}.local-folder-actions>.text-button{margin-left:0;align-self:center}.local-folder-symbol{width:39px;height:39px}.local-folder-status-copy>span{font-size:11px}}@media(prefers-reduced-motion:reduce){.local-folder-spinner{animation:none}}
+
+/* Folder permissions may need renewal before the cookbook can be opened. */
+.storage-reconnect-screen { width: min(680px, calc(100% - 32px)); margin: 48px auto; }
+.storage-reconnect-heading { text-align: center; margin-bottom: 24px; }
+.storage-reconnect-heading > svg { color: var(--green); margin-bottom: 12px; }
+.storage-reconnect-heading h1 { font-size: 25px; margin-bottom: 12px; }
+.storage-reconnect-heading p { line-height: 1.7; margin-bottom: 18px; overflow-wrap: anywhere; }
+.storage-status-bar { display: flex; align-items: center; gap: 9px; padding: 10px 32px; color: var(--green); background: var(--green-soft); font-size: 12px; }
+.storage-status-bar span { min-width: 0; overflow-wrap: anywhere; }
+.storage-status-bar small { font-size: inherit; color: var(--muted); }
+.storage-status-bar > svg { flex-shrink: 0; }
+.storage-status-bar button { margin-left: auto; flex-shrink: 0; text-decoration: underline; }
+.storage-status-bar.has-error { color: #a75037; }
+.folder-setup-banner { margin: 18px 32px 0; padding: 13px 16px; border: 1px solid var(--line); border-radius: 14px; display: flex; gap: 12px; align-items: center; background: var(--surface); }
+.folder-setup-banner > svg { flex-shrink: 0; color: var(--green); }
+.folder-setup-banner p { margin: 0; flex: 1; font-size: 13px; line-height: 1.6; }
+.folder-setup-banner .button { font-size: 12px; flex-shrink: 0; }
+@media (max-width: 640px) {
+  .storage-status-bar { padding: 10px 16px; }
+  .storage-status-bar small { display: none; }
+  .folder-setup-banner { margin: 14px 16px 0; flex-wrap: wrap; }
+  .folder-setup-banner .button { margin-left: 33px; }
+  .storage-reconnect-screen { margin: 28px auto; }
+}
+
+.folder-recovery-tip { font-size: 13px; line-height: 1.8; padding: 16px; border-radius: 12px; background: var(--green-soft); overflow-wrap: anywhere; }

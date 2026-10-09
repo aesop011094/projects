@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownToLine, ArrowRight, ArrowUpRight, BookOpen, CalendarDays, Check, ChefHat, ChevronRight, Clock3, Heart, Home, Leaf, Menu, Moon, Plus, Search, Settings as SettingsIcon, ShieldCheck, ShoppingBasket, Shuffle, SlidersHorizontal, Sparkles, Sun, Users, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, ArrowUpRight, BookOpen, CalendarDays, Check, ChefHat, ChevronRight, Clock3, FolderOpen, HardDrive, Heart, Home, Leaf, Menu, Moon, Plus, Search, Settings as SettingsIcon, ShieldCheck, ShoppingBasket, Shuffle, SlidersHorizontal, Sparkles, Sun, Users, X } from 'lucide-react';
 import { useCookbook } from './store';
 import type { Page, Recipe } from './types';
 import RecipeDetail from './components/RecipeDetail';
@@ -10,6 +10,7 @@ import MealPlanner from './components/MealPlanner';
 import Settings from './components/Settings';
 import ImportRecipe from './components/ImportRecipe';
 import { ConfirmDialog } from './components/ui';
+import LocalFolderSettings from './components/LocalFolderSettings';
 
 const navigation = [
   { id: 'home' as Page, label: '首頁', icon: Home },
@@ -31,7 +32,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (id: st
 }
 
 export default function App() {
-  const { data, loading, storageReady, saveError, conflict, reloadLatest, update, notify, toast, retrySave } = useCookbook();
+  const { data, loading, storageReady, saveError, conflict, reloadLatest, update, notify, toast, retrySave, localFolder, saving } = useCookbook();
   const [page, setPage] = useState<Page>('home');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [editor, setEditor] = useState<Recipe | true | null>(null);
@@ -99,7 +100,7 @@ export default function App() {
   const recipePages = page === 'home' || page === 'recipes' || page === 'favorites';
 
   if (loading) return <div className="loading-screen"><div className="brand-icon"><BookOpen size={28}/></div><h1>我的食譜庫</h1><p>正在打開你的食譜書…</p><div className="loading-dots" /></div>;
-  if (!storageReady) return <div className="loading-screen"><ShieldCheck size={40}/><h1>暫時無法讀取食譜</h1><p>{saveError || '請確認瀏覽器允許本機資料儲存。'}</p><button className="button primary" onClick={retrySave}>重新讀取</button><p className="muted">為保障已有資料，暫停所有寫入操作。</p></div>;
+  if (!storageReady) return <div className="storage-reconnect-screen"><div className="storage-reconnect-heading"><ShieldCheck size={36}/><h1>{localFolder.name ? '連接你的本機食譜' : '暫時無法讀取食譜'}</h1><p>{saveError || (localFolder.name ? '請准許存取資料夾，就可以繼續使用你的食譜。' : '請確認瀏覽器允許本機資料儲存。')}</p><button className="button secondary" onClick={retrySave}>重新讀取</button></div><LocalFolderSettings/>{localFolder.status === 'error' && localFolder.name && <p className="folder-recovery-tip">如主檔損壞，可將 cookbook.previous.json 複製到另一個資料夾，把副本改名 cookbook.json，再按「選擇另一個資料夾」開啟。原來的檔案會保留。</p>}<p className="muted">為保障已有資料，暫停所有寫入操作。</p></div>;
   return <div className="app-layout">
     {menuOpen && <button className="sidebar-backdrop" aria-label="關閉選單" onClick={() => setMenuOpen(false)}/>}
     <aside className={`sidebar ${menuOpen ? 'mobile-open' : ''}`}>
@@ -107,11 +108,13 @@ export default function App() {
       <div className="sidebar-label">我的料理空間</div>
       <nav className="desktop-nav" aria-label="主要導覽">{navigation.map(item => <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => navigate(item.id, true)} aria-current={page === item.id ? 'page' : undefined}><item.icon size={19}/><span>{item.label}</span>{item.id === 'recipes' && <span className="nav-count">{data.recipes.length}</span>}{item.id === 'favorites' && favoriteCount > 0 && <span className="nav-count">{favoriteCount}</span>}</button>)}</nav>
       <div className="sidebar-inspiration"><div className="inspiration-icon"><Leaf size={21}/></div><p>今天，想煮點甚麼？</p><span>讓食譜庫帶來一點靈感。</span><button onClick={() => { if (data.recipes.length) openRecipe(data.recipes[Math.floor(Math.random() * data.recipes.length)].id); else setEditor(true); }}><Shuffle size={15}/> 隨機選一道 <ArrowRight size={15}/></button></div>
-      <div className="sidebar-bottom"><button className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}><SettingsIcon size={19}/>設定與備份</button><div className="local-status"><span className="status-dot"/><span>私人食譜 · 本機儲存</span><ShieldCheck size={14}/></div></div>
+      <div className="sidebar-bottom"><button className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}><SettingsIcon size={19}/>設定與備份</button><div className="local-status"><span className="status-dot"/><span>{localFolder.name ? '食譜資料夾 · 自動儲存' : '私人食譜 · 瀏覽器儲存'}</span><ShieldCheck size={14}/></div></div>
     </aside>
 
     <div className="main-layout">
       <header className="topbar"><div className="breadcrumb"><button className="mobile-menu icon-button" aria-label="開啟選單" onClick={() => setMenuOpen(true)}><Menu size={21}/></button><span className="desktop-crumb">我的料理空間</span><ChevronRight size={14} className="desktop-crumb"/><strong>{page === 'home' ? <><span className="desktop-home-label">首頁</span><span className="mobile-home-label">我的食譜庫</span></> : pageNames[page]}</strong></div><div className="topbar-actions"><button className="icon-button theme-button" aria-label={themeDark ? '切換淺色模式' : '切換深色模式'} onClick={() => update(draft => { draft.theme = themeDark ? 'light' : 'dark'; })}>{themeDark ? <Sun size={19}/> : <Moon size={19}/>}</button><button className="icon-button mobile-settings" aria-label="設定與備份" onClick={() => navigate('settings')}><SettingsIcon size={19}/></button><button className="button secondary import-button" aria-label="匯入食譜" onClick={() => setImportOpen(true)}><ArrowDownToLine size={16}/><span>匯入食譜</span></button><button className="button primary add-recipe-button" aria-label="新增食譜" onClick={() => setEditor(true)}><Plus size={18}/><span>新增食譜</span></button></div></header>
+      {localFolder.name && <div className={`storage-status-bar ${saveError ? 'has-error' : ''}`} role="status"><HardDrive size={16}/><span>{saving ? '正在儲存到電腦…' : saveError ? '目前修改尚未儲存' : '已儲存到電腦'}<small> · {localFolder.name}</small></span><button onClick={() => navigate('settings')}>管理資料夾</button></div>}
+      {!localFolder.name && localFolder.status === 'browser' && page !== 'settings' && <div className="folder-setup-banner"><FolderOpen size={21}/><p>讓食譜自動存到電腦資料夾，毋須每次匯出。</p><button className="button secondary" onClick={() => navigate('settings')}>設定本機資料夾</button></div>}
       {saveError && <div className="save-error" role="alert"><span>{saveError} 請勿關閉頁面，先匯出備份。</span>{conflict ? <button onClick={() => setReloadConfirm(true)}>重新讀取最新資料</button> : <button onClick={retrySave}>重試儲存</button>}<button onClick={() => navigate('settings')}>前往備份</button></div>}
       <main className="main-content" id="main-content">
         {page === 'home' && !hasSearch && <>
@@ -130,7 +133,7 @@ export default function App() {
         {page === 'shopping' && <ShoppingList/>}
         {page === 'planner' && <MealPlanner onOpenRecipe={openRecipe}/>}
         {page === 'settings' && <Settings/>}
-        <footer className="app-footer"><div><BookOpen size={16}/><span>我的食譜庫 <span className="footer-dot">·</span> 讓每一道家常，都值得收藏</span></div><span>資料只留在此瀏覽器 · 記得定期備份</span></footer>
+        <footer className="app-footer"><div><BookOpen size={16}/><span>我的食譜庫 <span className="footer-dot">·</span> 讓每一道家常，都值得收藏</span></div><span>{localFolder.name ? (saving ? '正在寫入你的本機食譜資料夾…' : saveError ? '修改尚未存到資料夾，請查看提示' : '食譜及圖片已存到你的電腦資料夾') : '資料保存在此瀏覽器 · 可在設定啟用資料夾自動儲存'}</span></footer>
       </main>
     </div>
     <nav className="bottom-nav" aria-label="手機主要導覽">{navigation.map(item => <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => navigate(item.id, true)} aria-current={page === item.id ? 'page' : undefined}><item.icon size={21}/><span>{item.label}</span></button>)}</nav>
@@ -139,6 +142,6 @@ export default function App() {
     {editor && <RecipeEditor recipe={editor === true ? undefined : editor} onClose={() => setEditor(null)} onSaved={id => { setEditor(null); openRecipe(id); }}/>}
     {cookingId && <CookingMode recipeId={cookingId} onClose={() => setCookingId(null)}/>}
     {importOpen && <ImportRecipe onClose={() => setImportOpen(false)} onReview={recipe => { setImportOpen(false); setEditor(recipe); notify('草稿已整理，請確認食材份量及步驟後儲存'); }}/>}
-    {reloadConfirm && <ConfirmDialog title="重新讀取最新資料？" description="這個分頁尚未儲存的修改將被放棄，並載入另一個分頁已儲存的最新資料。請先到設定匯出目前修改作備份。" confirmLabel="確認重新讀取" onClose={() => setReloadConfirm(false)} onConfirm={() => { setEditor(null); setCookingId(null); setImportOpen(false); navigate('settings'); reloadLatest(); }}/>}
+    {reloadConfirm && <ConfirmDialog title="重新讀取最新資料？" description="這個分頁尚未儲存的修改將被放棄，並載入已儲存的最新資料。請先到設定匯出目前修改作備份。" confirmLabel="確認重新讀取" onClose={() => setReloadConfirm(false)} onConfirm={() => { setEditor(null); setCookingId(null); setImportOpen(false); navigate('settings'); reloadLatest(); }}/>}
   </div>;
 }

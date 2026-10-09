@@ -60,8 +60,8 @@ export default function RecipeEditor({ recipe, onClose, onSaved }: { recipe?: Re
     };
     try { const candidate = structuredClone(data); applySave(candidate); validateAppData(candidate); }
     catch (reason) { setError(reason instanceof Error ? reason.message.replace('備份格式不正確：', '請檢查食譜資料：') : '食譜資料有誤，請檢查後再儲存。'); return; }
-    update(applySave);
-    notify(recipe ? '已儲存食譜' : '新食譜已加入你的食譜庫');
+    if (!update(applySave)) { setError('目前未能儲存，請按畫面提示重新連接或讀取最新資料。這份草稿仍保留在表單。'); return; }
+    notify(recipe ? '食譜內容已更新，正在儲存' : '新食譜已加入你的食譜庫');
     onSaved(saved.id);
   };
   return <>

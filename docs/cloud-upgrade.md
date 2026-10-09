@@ -1,10 +1,20 @@
 # 日後雲端同步及 AI 升級
 
-目前 App 使用真正的 IndexedDB，所有主要功能已可在本機操作。這份文件是升級方案，不代表這些服務已經啟用。
+目前 App 已有實體資料夾自動儲存及 IndexedDB 瀏覽器儲存兩種模式，主要功能可在本機操作。兩者均不需伺服器、網絡、API Key 或付費服務。下列 Supabase 及 AI 部分是升級方案，不代表那些服務已經啟用。
 
 ## 儲存介面
 
-`src/store.tsx` 負責使用者狀態；資料庫操作只在 `src/lib/storage.ts` 的 `loadStoredData()`／`saveStoredData()`。介面元件透過 `useCookbook()` 更新資料，不直接操作資料庫。`AppData` 包含穩定 ID、版本、食譜、收藏、分類、購物、實際日期計劃及煮食進度；`validateAppData()` 會驗證結構和關聯。可加入遠端 adapter 及登入狀態，同時保留 IndexedDB 作離線快取。
+`src/store.tsx` 負責使用者狀態、選擇儲存模式、串行寫入、權限重連及衝突提示。介面元件透過 `useCookbook()` 更新資料，不直接操作檔案或資料庫。`AppData` 包含穩定 ID、版本、食譜、收藏、分類、購物、實際日期計劃及煮食進度；`validateAppData()` 驗證結構及關聯。
+
+`src/lib/storage.ts` 提供 IndexedDB 的 `loadStoredData()`／`saveStoredData()` 及交易內版本比較。`src/lib/local-folder.ts` 封裝 File System Access 資料夾選擇及原生檔案讀寫；資料夾控制代碼另存 IndexedDB，載入後先查詢權限，需要重授權時由使用者點擊觸發。讀取失敗或權限不足時停止寫入，不以示範資料覆蓋已有檔案。
+
+資料夾主檔 `cookbook.json` 是含 `format`、`version`、`revision`、`updatedAt` 及完整 `data` 的 JSON 包裝，圖片保留為 data URL。首次建立前須確認搬移目前資料；已有檔案先檢查大小、結構及資料關聯並讓使用者確認開啟。這個包裝與傳統 JSON 匯出備份格式不同；新版「匯入 JSON 備份」能辨認兩種格式，完整驗證並經使用者確認後才還原。舊版 App 不認識資料夾包裝。
+
+寫入使用 Web Locks 串行化同來源分頁，並比較完整內容的 SHA-256 指紋。成功寫入前先將原檔保留為 `cookbook.previous.json`，再核對版本並關閉原生 writable stream 以提交主檔；提交前再次確認權限及檔案內容。Web Locks 不能鎖定另一個桌面程式，外部程式仍不應同時修改這些檔案。上一份副本只有一個版本，不能取代硬碟或整個資料夾的備份。
+
+Chrome／Edge 桌面瀏覽器需要安全的執行環境及資料夾讀寫權限。若缺少資料夾選擇、Web Locks 或必要加密功能，App 保留 IndexedDB 模式。雲端政策禁止直接開本機 HTML 及操作原生系統選擇視窗；E2E 在允許的 HTTP 網址使用原生資料夾／檔案控制代碼測試讀寫，只替換資料夾選擇入口。不能據此聲稱已實測下載後雙擊及系統選擇視窗。
+
+日後可在 store 加入遠端 adapter 及登入狀態，同時保留本機模式供離線使用。遠端資料不可在未經確認下取代使用者已有的本機食譜。
 
 ## Supabase
 
